@@ -67,16 +67,16 @@
 
 (test "interp-simple-with-amb-13"
   (run* (q) (evalo '(let ((l1 '(cat dog rat fox))
-                          (l2 '(mouse fox hen cat)))
-                      (letrec ((require
-                                ;; this definition of 'require' is
-                                ;; adapted from SICP (see examples
-                                ;; below)
-                                (lambda (p)
-                                  (if (not p)
-                                      (amb)
-                                      'ignore)))
-                               (pick-one (lambda (l)
+                          (l2 '(mouse fox hen cat))
+                          (require
+                           ;; this definition of 'require' is
+                           ;; adapted from SICP (see examples
+                           ;; below)
+                           (lambda (p)
+                             (if (not p)
+                                 (amb)
+                                 'ignore))))
+                      (letrec ((pick-one (lambda (l)
                                            (let ((_ (require (not (null? l)))))
                                              (amb (car l)
                                                   (pick-one (cdr l)))))))
@@ -84,27 +84,27 @@
                               (choice-2 (pick-one l2)))
                           (let ((_ (require (equal? choice-1 choice-2))))
                             (list choice-1 choice-2)))))
-                    q))
+                   q))
   '((fox fox)
     (cat cat)))
 
 (test "interp-simple-with-amb-14"
-  (run* (q) (evalo '(letrec ((flip-coin (lambda () (amb 'heads 'tails))))
+  (run* (q) (evalo '(let ((flip-coin (lambda () (amb 'heads 'tails))))
                       (flip-coin))
                    q))
   '(heads
     tails))
 
 (test "interp-simple-with-amb-15"
-  (run* (q) (evalo '(letrec ((require
-                              ;; this definition of 'require' is
-                              ;; adapted from SICP (see examples
-                              ;; below)
-                              (lambda (p)
-                                (if (not p)
-                                    (amb)
-                                    'ignore)))
-                             (flip-coin (lambda () (amb 'heads 'tails))))
+  (run* (q) (evalo '(let ((require
+                           ;; this definition of 'require' is
+                           ;; adapted from SICP (see examples
+                           ;; below)
+                           (lambda (p)
+                             (if (not p)
+                                 (amb)
+                                 'ignore)))
+                          (flip-coin (lambda () (amb 'heads 'tails))))
                       (let ((toss-1 (flip-coin))
                             (toss-2 (flip-coin)))
                         (let ((_ (require (equal? toss-1 toss-2))))
