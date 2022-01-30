@@ -134,65 +134,60 @@
 (test "grammar-1"
   (run* (v)
     (evalo
-     `(letrec ((require
-                (lambda (p)
-                  (if (not p)
-                      (amb)
-                      'ignore)))
-               (member
-                (lambda (x ls)
-                  (cond
-                    ((null? ls) #f)
-                    ((equal? (car ls) x) ls)
-                    (else (member x (cdr ls))))))
-               (nouns
-                (lambda ()
-                  '(noun student professor cat class)))
-               (verbs
-                (lambda ()
-                  '(verb studies lectures eats sleeps)))
-               (articles
-                (lambda ()
-                  '(article the a)))
-               (parse-sentence
-                (lambda (unparsed)
-                  (match (parse-noun-phrase unparsed)
-                    [`(,np . ,unparsed)
-                     (match (parse-word (verbs) unparsed)
-                       [`(,v . ,unparsed)
-                        (cons
-                         (list 'sentence
-                               np
-                               v)
-                         unparsed)])])))
-               (parse-noun-phrase
-                (lambda (unparsed)
-                  (match (parse-word (articles) unparsed)
-                    [`(,a . ,unparsed)
-                     (match (parse-word (nouns) unparsed)
-                       [`(,n . ,unparsed)
-                        (cons
-                         (list 'noun-phrase
-                               a
-                               n)
-                         unparsed)])])))
-               (parse-word
-                (lambda (word-list unparsed)
-                  (let ((_ (require (not (null? unparsed)))))
-                    (let ((_ (require (member (car unparsed) (cdr word-list)))))
-                      (match unparsed
-                        [`(,found-word . ,unparsed)
-                         (cons
-                          (list (car word-list) found-word)
-                          unparsed)])))))
-               (parse
-                (lambda (input)
-                  (let ((unparsed input))
-                    (match (parse-sentence unparsed)
-                      [`(,sent . ,unparsed)
-                       (let ((_ (require (null? unparsed))))
-                         sent)])))))
-        (parse '(the cat eats)))
+     `(let ((nouns '(noun student professor cat class))
+            (verbs '(verb studies lectures eats sleeps))
+            (articles '(article the a))
+            ;;
+            (require
+             (lambda (p)
+               (if (not p)
+                   (amb)
+                   'ignore))))
+        (letrec ((member
+                  (lambda (x ls)
+                    (cond
+                      ((null? ls) #f)
+                      ((equal? (car ls) x) ls)
+                      (else (member x (cdr ls))))))                 
+                 (parse-sentence
+                  (lambda (unparsed)
+                    (match (parse-noun-phrase unparsed)
+                      [`(,np . ,unparsed)
+                       (match (parse-word verbs unparsed)
+                         [`(,v . ,unparsed)
+                          (cons
+                           (list 'sentence
+                                 np
+                                 v)
+                           unparsed)])])))
+                 (parse-noun-phrase
+                  (lambda (unparsed)
+                    (match (parse-word articles unparsed)
+                      [`(,a . ,unparsed)
+                       (match (parse-word nouns unparsed)
+                         [`(,n . ,unparsed)
+                          (cons
+                           (list 'noun-phrase
+                                 a
+                                 n)
+                           unparsed)])])))
+                 (parse-word
+                  (lambda (word-list unparsed)
+                    (let ((_ (require (not (null? unparsed)))))
+                      (let ((_ (require (member (car unparsed) (cdr word-list)))))
+                        (match unparsed
+                          [`(,found-word . ,unparsed)
+                           (cons
+                            (list (car word-list) found-word)
+                            unparsed)])))))
+                 (parse
+                  (lambda (input)
+                    (let ((unparsed input))
+                      (match (parse-sentence unparsed)
+                        [`(,sent . ,unparsed)
+                         (let ((_ (require (null? unparsed))))
+                           sent)])))))
+          (parse '(the cat eats))))
      v))
   '((sentence
      (noun-phrase (article the) (noun cat))
