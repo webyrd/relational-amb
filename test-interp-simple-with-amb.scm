@@ -65,7 +65,7 @@
                     q))
   '(5))
 
-(test "interp-simple-with-amb-13"  
+(test "interp-simple-with-amb-13"
   (run* (q) (evalo '(let ((l1 '(cat dog rat fox))
                           (l2 '(mouse fox hen cat)))
                       (letrec ((require
@@ -87,6 +87,31 @@
                     q))
   '((fox fox)
     (cat cat)))
+
+(test "interp-simple-with-amb-14"
+  (run* (q) (evalo '(letrec ((flip-coin (lambda () (amb 'heads 'tails))))
+                      (flip-coin))
+                   q))
+  '(heads
+    tails))
+
+(test "interp-simple-with-amb-15"
+  (run* (q) (evalo '(letrec ((require
+                              ;; this definition of 'require' is
+                              ;; adapted from SICP (see examples
+                              ;; below)
+                              (lambda (p)
+                                (if (not p)
+                                    (amb)
+                                    'ignore)))
+                             (flip-coin (lambda () (amb 'heads 'tails))))
+                      (let ((toss-1 (flip-coin))
+                            (toss-2 (flip-coin)))
+                        (let ((_ (require (equal? toss-1 toss-2))))
+                          (list toss-1 toss-2))))
+                   q))
+  '((heads heads)
+    (tails tails)))
 
 
 
