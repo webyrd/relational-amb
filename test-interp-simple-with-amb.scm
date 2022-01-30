@@ -547,119 +547,112 @@
 (test "grammar-generate-1"
   (run 6 (s v)
     (evalo
-     `(letrec ((require
-                (lambda (p)
-                  (if (not p)
-                      (amb)
-                      'ignore)))
-               (member
-                (lambda (x ls)
-                  (cond
-                    ((null? ls) #f)
-                    ((equal? (car ls) x) ls)
-                    (else (member x (cdr ls))))))
-               (nouns
-                (lambda ()
-                  '(noun student professor cat class)))
-               (verbs
-                (lambda ()
-                  '(verb studies lectures eats sleeps)))
-               (articles
-                (lambda ()
-                  '(article the a)))
-               (prepositions
-                (lambda ()
-                  '(prep for to in by with)))
-               (parse-sentence
-                (lambda (unparsed)
-                  (match (parse-noun-phrase unparsed)
-                    [`(,np . ,unparsed)
-                     (match (parse-verb-phrase unparsed)
-                       [`(,vp . ,unparsed)
-                        (cons
-                         (list 'sentence
-                               np
-                               vp)
-                         unparsed)])])))
-               (parse-simple-noun-phrase
-                (lambda (unparsed)
-                  (match (parse-word (articles) unparsed)
-                    [`(,a . ,unparsed)
-                     (match (parse-word (nouns) unparsed)
-                       [`(,n . ,unparsed)
-                        (cons
-                         (list 'simple-noun-phrase
-                               a
-                               n)
-                         unparsed)])])))
-               (parse-noun-phrase
-                (lambda (unparsed)
-                  (letrec ((maybe-extend
-                            (lambda (noun-phrase unparsed)
-                              (amb (cons
-                                    noun-phrase
-                                    unparsed)
-                                   (match (parse-prepositional-phrase unparsed)
-                                     [`(,prepp . ,unparsed)
-                                      (maybe-extend (list 'noun-phrase
-                                                          noun-phrase
-                                                          prepp)
-                                                    unparsed)])))))
-                    (match (parse-simple-noun-phrase unparsed)
+     `(let ((nouns '(noun student professor cat class))
+            (verbs '(verb studies lectures eats sleeps))
+            (articles '(article the a))
+            (prepositions '(prep for to in by with))
+            ;;
+            (require
+             (lambda (p)
+               (if (not p)
+                   (amb)
+                   'ignore))))
+        (letrec ((member
+                  (lambda (x ls)
+                    (cond
+                      ((null? ls) #f)
+                      ((equal? (car ls) x) ls)
+                      (else (member x (cdr ls))))))
+                 (parse-sentence
+                  (lambda (unparsed)
+                    (match (parse-noun-phrase unparsed)
                       [`(,np . ,unparsed)
-                       (maybe-extend np unparsed)]))))
-               (parse-prepositional-phrase
-                (lambda (unparsed)
-                  (match (parse-word (prepositions) unparsed)
-                    [`(,prep . ,unparsed)
-                     (match (parse-noun-phrase unparsed)
-                       [`(,np . ,unparsed)
-                        (cons
-                         (list 'prep-phrase
-                               prep
-                               np)
-                         unparsed)])])))
-               (parse-verb-phrase
-                (lambda (unparsed)
-                  (letrec ((maybe-extend
-                            (lambda (verb-phrase unparsed)
-                              (amb (cons verb-phrase
-                                         unparsed)
-                                   (match (parse-prepositional-phrase unparsed)
-                                     [`(,prepp . ,unparsed)
-                                      (maybe-extend (list 'verb-phrase
-                                                          verb-phrase
-                                                          prepp)
-                                                    unparsed)])))))
-                    (match (parse-word (verbs) unparsed)
-                      [`(,v . ,unparsed)
-                       (maybe-extend v unparsed)]))))
-               (parse-word
-                (lambda (word-list unparsed)
-                  (let ((_ (require (not (null? unparsed)))))
-                    (let ((_ (require (member (car unparsed) (cdr word-list)))))
-                      (match unparsed
-                        [`(,found-word . ,unparsed)
-                         (cons
-                          (list (car word-list) found-word)
-                          unparsed)])))))
-               (parse
-                (lambda (input)
-                  (let ((unparsed input))
-                    (match (parse-sentence unparsed)
-                      [`(,sent . ,unparsed)
-                       (let ((_ (require (null? unparsed))))
-                         sent)])))))
-        (parse ',s))
+                       (match (parse-verb-phrase unparsed)
+                         [`(,vp . ,unparsed)
+                          (cons
+                           (list 'sentence
+                                 np
+                                 vp)
+                           unparsed)])])))
+                 (parse-simple-noun-phrase
+                  (lambda (unparsed)
+                    (match (parse-word articles unparsed)
+                      [`(,a . ,unparsed)
+                       (match (parse-word nouns unparsed)
+                         [`(,n . ,unparsed)
+                          (cons
+                           (list 'simple-noun-phrase
+                                 a
+                                 n)
+                           unparsed)])])))
+                 (parse-noun-phrase
+                  (lambda (unparsed)
+                    (letrec ((maybe-extend
+                              (lambda (noun-phrase unparsed)
+                                (amb (cons
+                                      noun-phrase
+                                      unparsed)
+                                     (match (parse-prepositional-phrase unparsed)
+                                       [`(,prepp . ,unparsed)
+                                        (maybe-extend (list 'noun-phrase
+                                                            noun-phrase
+                                                            prepp)
+                                                      unparsed)])))))
+                      (match (parse-simple-noun-phrase unparsed)
+                        [`(,np . ,unparsed)
+                         (maybe-extend np unparsed)]))))
+                 (parse-prepositional-phrase
+                  (lambda (unparsed)
+                    (match (parse-word prepositions unparsed)
+                      [`(,prep . ,unparsed)
+                       (match (parse-noun-phrase unparsed)
+                         [`(,np . ,unparsed)
+                          (cons
+                           (list 'prep-phrase
+                                 prep
+                                 np)
+                           unparsed)])])))
+                 (parse-verb-phrase
+                  (lambda (unparsed)
+                    (letrec ((maybe-extend
+                              (lambda (verb-phrase unparsed)
+                                (amb (cons verb-phrase
+                                           unparsed)
+                                     (match (parse-prepositional-phrase unparsed)
+                                       [`(,prepp . ,unparsed)
+                                        (maybe-extend (list 'verb-phrase
+                                                            verb-phrase
+                                                            prepp)
+                                                      unparsed)])))))
+                      (match (parse-word verbs unparsed)
+                        [`(,v . ,unparsed)
+                         (maybe-extend v unparsed)]))))
+                 (parse-word
+                  (lambda (word-list unparsed)
+                    (let ((_ (require (not (null? unparsed)))))
+                      (let ((_ (require (member (car unparsed) (cdr word-list)))))
+                        (match unparsed
+                          [`(,found-word . ,unparsed)
+                           (cons
+                            (list (car word-list) found-word)
+                            unparsed)])))))
+                 (parse
+                  (lambda (input)
+                    (let ((unparsed input))
+                      (match (parse-sentence unparsed)
+                        [`(,sent . ,unparsed)
+                         (let ((_ (require (null? unparsed))))
+                           sent)])))))
+          (parse ',s)))
      v))
   '(((the student studies)
      (sentence (simple-noun-phrase (article the) (noun student)) (verb studies)))
     ((the student lectures)
      (sentence (simple-noun-phrase (article the) (noun student)) (verb lectures)))
-    ((the student eats)
-     (sentence (simple-noun-phrase (article the) (noun student)) (verb eats)))
     ((a student studies)
      (sentence (simple-noun-phrase (article a) (noun student)) (verb studies)))
+    ((the student eats)
+     (sentence (simple-noun-phrase (article the) (noun student)) (verb eats)))
     ((a student lectures)
      (sentence (simple-noun-phrase (article a) (noun student)) (verb lectures)))
     ((the student sleeps)
