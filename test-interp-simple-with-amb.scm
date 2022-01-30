@@ -65,6 +65,30 @@
                     q))
   '(5))
 
+(test "interp-simple-with-amb-13"  
+  (run* (q) (evalo '(let ((l1 '(cat dog rat fox))
+                          (l2 '(mouse fox hen cat)))
+                      (letrec ((require
+                                ;; this definition of 'require' is
+                                ;; adapted from SICP (see examples
+                                ;; below)
+                                (lambda (p)
+                                  (if (not p)
+                                      (amb)
+                                      'ignore)))
+                               (pick-one (lambda (l)
+                                           (let ((_ (require (not (null? l)))))
+                                             (amb (car l)
+                                                  (pick-one (cdr l)))))))
+                        (let ((choice-1 (pick-one l1))
+                              (choice-2 (pick-one l2)))
+                          (let ((_ (require (equal? choice-1 choice-2))))
+                            (list choice-1 choice-2)))))
+                    q))
+  '((fox fox)
+    (cat cat)))
+
+
 
 ;; Tests/examples from SICP:
 
@@ -75,86 +99,12 @@
 ;; https://mitpress.mit.edu/sites/default/files/sicp/full-text/sicp/book/node89.html
 ;; Amb and Search 
 
-(test "interp-simple-with-amb--sicp-1"
+(test "interp-simple-with-amb-sicp-1"
   (run* (q) (evalo '(list (amb 1 2 3) (amb 'a 'b)) q))
   '((1 a) (1 b) (2 a) (2 b) (3 a) (3 b)))
 
 ;; https://mitpress.mit.edu/sites/default/files/sicp/full-text/sicp/book/node90.html
 ;; Examples of Nondeterministic Programs
-
-
-#|
-(define require
-  (lambda (p)
-    (if (not p)
-        (amb)
-        'ignore)))
-|#
-
-(test "dummy-require-1"
-  (run* (v)
-    (evalo
-     `(letrec ((require
-                (lambda (_)
-                  _))
-               (member
-                (lambda (x ls)
-                  (cond
-                    ((null? ls) #f)
-                    ((equal? (car ls) x) ls)
-                    (else (member x (cdr ls))))))
-               (nouns
-                (lambda ()
-                  '(noun student professor cat class)))
-               (verbs
-                (lambda ()
-                  '(verb studies lectures eats sleeps)))
-               (articles
-                (lambda ()
-                  '(article the a)))
-               (parse-sentence
-                (lambda (unparsed)
-                  (match (parse-noun-phrase unparsed)
-                    [`(,np . ,unparsed)
-                     (match (parse-word (verbs) unparsed)
-                       [`(,v . ,unparsed)
-                        (cons
-                         (list 'sentence
-                               np
-                               v)
-                         unparsed)])])))
-               (parse-noun-phrase
-                (lambda (unparsed)
-                  (match (parse-word (articles) unparsed)
-                    [`(,a . ,unparsed)
-                     (match (parse-word (nouns) unparsed)
-                       [`(,n . ,unparsed)
-                        (cons
-                         (list 'noun-phrase
-                               a
-                               n)
-                         unparsed)])])))
-               (parse-word
-                (lambda (word-list unparsed)
-                  (let ((_ (require (not (null? unparsed)))))
-                    (let ((_ (require (member (car unparsed) (cdr word-list)))))
-                      (match unparsed
-                        [`(,found-word . ,unparsed)
-                         (cons
-                          (list (car word-list) found-word)
-                          unparsed)])))))
-               (parse
-                (lambda (input)
-                  (let ((unparsed input))
-                    (match (parse-sentence unparsed)
-                      [`(,sent . ,unparsed)
-                       (let ((_ (require (null? unparsed))))
-                         sent)])))))
-        (parse '(the cat eats)))
-     v))
-  '((sentence
-     (noun-phrase (article the) (noun cat))
-     (verb eats))))
 
 (test "grammar-1"
   (run* (v)
