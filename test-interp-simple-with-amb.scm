@@ -113,6 +113,237 @@
   '((heads heads)
     (tails tails)))
 
+(test "interp-simple-with-amb-16"
+  (run* (q) (evalo '(let ((error (lambda () (car)))
+                          (flip-coin (lambda () (amb 'heads 'tails))))
+                      (let ((toss-1 (flip-coin))
+                            (toss-2 (flip-coin)))
+                        (if (equal? toss-1 toss-2)
+                            (list toss-1 toss-2)
+                            (error))))
+                   q))
+  '((heads heads)
+    (tails tails)))
+
+(test "interp-simple-with-amb-17"
+  ;; In the relational interpreter, we don't need 'amb' to implement
+  ;; 'require'.  However, we do need 'amb' to implement 'flip-coin',
+  ;; unless we want to use an explicit logic variable within the
+  ;; Scheme code.  'amb' gives us non-determinism within ground Scheme
+  ;; programs.
+  (run* (q) (evalo '(let ((error (lambda () (car))))
+                      (let ((require
+                             ;; alternate definition of 'require',
+                             ;; invoking an error rather than 'amb'
+                             (lambda (p)
+                               (if (not p)
+                                   (error)
+                                   'ignore)))
+                            (flip-coin (lambda () (amb 'heads 'tails))))
+                        (let ((toss-1 (flip-coin))
+                              (toss-2 (flip-coin)))
+                          (let ((_ (require (equal? toss-1 toss-2))))
+                            (list toss-1 toss-2)))))
+                   q))
+  '((heads heads)
+    (tails tails)))
+
+(test "interp-simple-with-amb-18"
+  ;; Replacing 'amb' with a logic variable and 'if'.  However, this
+  ;; doesn't work with recursive uses of 'amb', unless we play
+  ;; trickier games.  'amb' is more convenient than a fresh logic
+  ;; variable for expressing non-determinism is Scheme code in the
+  ;; relational interpreter.
+  (run* (q)
+    (fresh (test)
+      (evalo `(let ((error (lambda () (car))))
+                (let ((require
+                       ;; alternate definition of 'require',
+                       ;; invoking an error rather than 'amb'
+                       (lambda (p)
+                         (if (not p)
+                             (error)
+                             'ignore)))
+                      (flip-coin (lambda () (if ',test 'heads 'tails))))
+                  (let ((toss-1 (flip-coin))
+                        (toss-2 (flip-coin)))
+                    (let ((_ (require (equal? toss-1 toss-2))))
+                      (list toss-1 toss-2)))))
+             q)))
+  '((heads heads)
+    (tails tails)))
+
+(test "interp-simple-with-amb-19"
+  ;; This use of 'amb' is awkward to replace by an 'if' and a fresh
+  ;; logic variable, due to the recursive use of 'amb'.
+  (run* (q) (evalo '(let ((error (lambda () (car))))
+                      (let ((require
+                             ;; alternate definition of 'require',
+                             ;; invoking an error rather than 'amb'
+                             (lambda (p)
+                               (if (not p)
+                                   (error)
+                                   'ignore))))
+                        (letrec ((select-from-list
+                                  (lambda (l)
+                                    (let ((_ (require (not (null? l)))))
+                                      (amb (car l)
+                                           (select-from-list (cdr l)))))))
+                          (let ((l1 '(cat dog rat fish fox))
+                                (l2 '(bat fox wolf cat squirrel)))
+                            (let ((animal-1 (select-from-list l1))
+                                  (animal-2 (select-from-list l2)))
+                              (let ((_ (require (equal? animal-1 animal-2))))
+                                (list animal-1 animal-2)))))))
+                   q))
+  '((fox fox)
+    (cat cat)))
+
+
+(test "type-inferencer-amb-1"
+  (run 1 (q)
+    (fresh (T1)
+      (evalo `(let ((require
+                     (lambda (p)
+                       (if (not p)
+                           (amb)
+                           'ignore))))
+                (letrec ((lookup (lambda (x gamma)
+                                   (let ((_ (require (not (null? gamma)))))
+                                     (match gamma
+                                       [`((,y . ,t) . ,gamma^)
+                                        (if (equal? x y)
+                                            t
+                                            (lookup x gamma^))]))))
+                         (!- (lambda (gamma t)
+                               (amb (!-var gamma t)
+                                    (!-abs gamma t)
+                                    (!-app gamma t))))
+                         (!-var (lambda (gamma t)
+                                  (let ((_ (require (symbol? t))))
+                                    (lookup t gamma))))
+                         (!-abs (lambda (gamma t)
+                                  (match t
+                                    [`(lambda (,x) ,e)
+                                     (let ((t1 ,T1))
+                                       (let ((t2 (!- `((,x . ,t1) . ,gamma) e)))
+                                         (list t1 '-> t2)))]
+                                    (else (amb)))))
+                         (!-app (lambda (gamma t)
+                                  (match t
+                                    [`(,e1 ,e2)
+                                     (let ((t1 (!- gamma e2)))
+                                       (match (!- gamma e1)
+                                         [`(,t2 -> ,t3)
+                                          (let ((_ (require (equal? t1 t2))))
+                                            t3)]))]
+                                    (else (amb))))))                  
+                  (!- '() '(lambda (z) (lambda (w) (lambda (v) (v w)))))))
+             q)))
+  '(((_.0 -> (_.0 -> ((_.0 -> _.1) -> _.1)))
+     (num _.0)
+     (absento (closure _.1) (primitive _.1)))))
+
+(test "type-inferencer-amb-2"
+  (run 1 (q)
+    (fresh (T1)
+      (evalo `(let ((require
+                     (lambda (p)
+                       (if (not p)
+                           (amb)
+                           'ignore))))
+                (letrec ((lookup (lambda (x gamma)
+                                   (let ((_ (require (not (null? gamma)))))
+                                     (match gamma
+                                       [`((,y . ,t) . ,gamma^)
+                                        (if (equal? x y)
+                                            t
+                                            (lookup x gamma^))]))))
+                         (!- (lambda (gamma t)
+                               (match t
+                                 [`(lambda (,x) ,e)
+                                  (let ((t1 ,T1))
+                                    (let ((t2 (!- `((,x . ,t1) . ,gamma) e)))
+                                      (list t1 '-> t2)))]
+                                 [`(,e1 ,e2)
+                                  (let ((t1 (!- gamma e2)))
+                                    (match (!- gamma e1)
+                                      [`(,t2 -> ,t3)
+                                       (let ((_ (require (equal? t1 t2))))
+                                         t3)]))]
+                                 [else (let ((_ (require (symbol? t))))
+                                         (lookup t gamma))]))))
+                  (!- '() '(lambda (z) (lambda (w) (lambda (v) (v w)))))))
+             q)))
+  '(((_.0 -> (_.0 -> ((_.0 -> _.1) -> _.1)))
+     (num _.0)
+     (absento (closure _.1) (primitive _.1)))))
+
+(test "type-inferencer-3"
+  (run 1 (q)
+    (fresh (T1)
+      (evalo `(let ((error (lambda () (car))))
+                (letrec ((lookup (lambda (x gamma)
+                                   (match gamma
+                                     [`() (error)]
+                                     [`((,y . ,t) . ,gamma^)
+                                      (if (equal? x y)
+                                          t
+                                          (lookup x gamma^))])))
+                         (!- (lambda (gamma t)
+                               (match t
+                                 [`(lambda (,x) ,e)
+                                  (let ((t1 ,T1))
+                                    (let ((t2 (!- `((,x . ,t1) . ,gamma) e)))
+                                      (list t1 '-> t2)))]
+                                 [`(,e1 ,e2)
+                                  (let ((t1 (!- gamma e2)))
+                                    (match (!- gamma e1)
+                                      [`(,t2 -> ,t3)
+                                       (if (equal? t1 t2)
+                                           t3
+                                           (error))]))]
+                                 [else (if (symbol? t)
+                                           (lookup t gamma)
+                                           (error))]))))
+                  (!- '() '(lambda (z) (lambda (w) (lambda (v) (v w)))))))
+             q)))
+  '(((_.0 -> (_.0 -> ((_.0 -> _.1) -> _.1)))
+     (num _.0)
+     (absento (closure _.1) (primitive _.1)))))
+
+(test "type-inferencer-4"
+  (run 1 (q T1)
+    (evalo `(let ((error (lambda () (car))))
+              (letrec ((lookup (lambda (x gamma)
+                                 (match gamma
+                                   [`() (error)]
+                                   [`((,y . ,t) . ,gamma^)
+                                    (if (equal? x y)
+                                        t
+                                        (lookup x gamma^))])))
+                       (!- (lambda (gamma t)
+                             (match t
+                               [`(lambda (,x) ,e)
+                                (let ((t1 ,T1))
+                                  (let ((t2 (!- `((,x . ,t1) . ,gamma) e)))
+                                    (list t1 '-> t2)))]
+                               [`(,e1 ,e2)
+                                (let ((t1 (!- gamma e2)))
+                                  (match (!- gamma e1)
+                                    [`(,t2 -> ,t3)
+                                     (if (equal? t1 t2)
+                                         t3
+                                         (error))]))]
+                               [else (if (symbol? t)
+                                         (lookup t gamma)
+                                         (error))]))))
+                (!- '() '(lambda (z) (lambda (w) (lambda (v) (v w)))))))
+           q))
+  '((((_.0 -> (_.0 -> ((_.0 -> _.1) -> _.1)))
+      (amb _.0 '(_.0 -> _.1) . _.2))
+     (num _.0)
+     (absento (closure _.1) (primitive _.1)))))
 
 
 ;; Tests/examples from SICP:

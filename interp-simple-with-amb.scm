@@ -5,9 +5,9 @@
 ;; using the "half-closure" approach from Reynold's definitional
 ;; interpreters.
 
-(define closure-tag (gensym "#%closure"))
-(define prim-tag (gensym "#%primitive"))
-(define undefined-tag (gensym "#%undefined"))
+(define closure-tag 'closure)
+(define prim-tag 'primitive)
+(define undefined-tag 'undefined)
 
 (define (evalo expr val)
   (eval-expo expr initial-env val))
