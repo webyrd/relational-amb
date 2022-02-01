@@ -18,7 +18,7 @@
       (sym _.0))
      (((lambda (_.0) (list (amb _.0 . _.1) (list 'quote _.0)))
        '(lambda (_.0) (list (amb _.0 . _.1) (list 'quote _.0))))
-      (=/= ((_.0 closure)) ((_.0 list)) ((_.0 quote)))
+      (=/= ((_.0 amb)) ((_.0 closure)) ((_.0 list)) ((_.0 quote)))
       (sym _.0)
       (absento (closure _.1)))))
 
@@ -97,7 +97,7 @@
        '(lambda (_.0)
           (list 'quote (list (amb _.0 . _.1) (list 'quote _.0)))))
       )     
-     (=/= ((_.0 closure)) ((_.0 list)) ((_.0 quote)))
+     (=/= ((_.0 amb)) ((_.0 closure)) ((_.0 list)) ((_.0 quote)))
      (sym _.0)
      (absento (closure _.1)))))
 
@@ -167,6 +167,6 @@
             _.0
             (list (amb 'quote . _.1) (list 'quote _.0)))))
       )
-     (=/= ((_.0 closure)) ((_.0 list)) ((_.0 quote)))
+     (=/= ((_.0 amb)) ((_.0 closure)) ((_.0 list)) ((_.0 quote)))
      (sym _.0)
      (absento (closure _.1)))))
