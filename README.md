@@ -2,7 +2,7 @@
 
 A Relational Exploration of McCarthy's amb
 
-Code repository for William E. Byrd's FOSDEM 2022 Declarative and Minimalistic Computing Devroom talk.
+Code repository for William E. Byrd's FOSDEM 2022 Declarative and Minimalistic Computing Devroom talk (https://fosdem.org/2022/schedule/event/relationalexplorationofmccarthysamb/)
 
 Title:
 A Relational Exploration of McCarthy's 'Amb'
@@ -19,6 +19,18 @@ The 'interp-simple-with-amb.scm' interpreter is a slightly modified version of '
 The 'quines-interp-with-amb.scm' interpreter is a slightly modified version of the Quines-generating interpreter from the 2012 Scheme Workshop paper, 'miniKanren, Live and Untagged: Quine Generation via Relational Interpreters (Programming Pearl)' (http://webyrd.net/quines/quines.pdf).
 
 Example usage in Chez Scheme:
+
+```
+Chez Scheme Version 9.5.5
+Copyright 1984-2020 Cisco Systems, Inc.
+
+> (load "test-my-interp.scm")
+Testing "my-interp-1"
+Testing "my-interp-2"
+Testing "my-interp-3"
+Testing "my-interp-4"
+Testing "my-interp-5"
+```
 
 ```
 Chez Scheme Version 9.5.5
