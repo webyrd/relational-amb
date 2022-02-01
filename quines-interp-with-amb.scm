@@ -23,6 +23,7 @@
       ((symbolo expr) (lookupo expr env val))
       ((fresh (e*)
          (== `(amb . ,e*) expr)
+         (not-in-envo 'amb env)
          (ambo e* env val)))      
       ((fresh (rator rand x body env^ a)
          (== `(,rator ,rand) expr)

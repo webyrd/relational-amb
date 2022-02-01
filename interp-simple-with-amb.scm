@@ -54,6 +54,7 @@
 
     ((fresh (e*)
        (== `(amb . ,e*) expr)
+       (not-in-envo 'amb env)
        (ambo e* env val)))
 
     ((handle-matcho expr env val))
